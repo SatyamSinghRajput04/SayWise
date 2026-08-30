@@ -160,16 +160,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!token) return;
     try {
       const updated = await api.getMe(token);
-      setUser(updated);
-      localStorage.setItem('saywise_user', JSON.stringify(updated));
-    } catch {
-      logout();
+      if (updated && updated.email) {
+        setUser(updated);
+        try {
+          localStorage.setItem('saywise_user', JSON.stringify(updated));
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('Session refresh warning:', e);
     }
   };
 
   useEffect(() => {
-    if (token) refreshUser();
-  }, []);
+    if (token) {
+      refreshUser();
+    }
+  }, [token]);
 
   return (
     <AuthContext.Provider

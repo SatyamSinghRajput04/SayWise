@@ -7,14 +7,28 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
     try {
+      // 1. Try local server-issued JWT verification
       const decoded = jwt.verify(token, config.jwtSecret);
       (req as any).user = decoded;
     } catch (_) {
-      (req as any).user = { id: 'usr_demo', email: 'alex@saywise.ai' };
+      try {
+        // 2. Decode Firebase/Google OAuth JWT payload safely
+        const decoded = jwt.decode(token) as any;
+        if (decoded && (decoded.user_id || decoded.sub || decoded.email)) {
+          (req as any).user = {
+            id: decoded.user_id || decoded.sub || 'usr_oauth',
+            email: decoded.email,
+            displayName: decoded.name || decoded.displayName || decoded.email?.split('@')[0],
+          };
+        } else {
+          (req as any).user = null;
+        }
+      } catch {
+        (req as any).user = null;
+      }
     }
   } else {
-    // Default to guest for friction-free demo evaluation
-    (req as any).user = { id: 'usr_demo', email: 'alex@saywise.ai' };
+    (req as any).user = null;
   }
   next();
 };

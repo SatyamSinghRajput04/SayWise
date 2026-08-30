@@ -55,12 +55,32 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const getMe = async (req: Request, res: Response): Promise<void> => {
-  const userId = (req as any).user?.id || 'usr_demo';
-  const user = await userRepository.findById(userId);
-  if (!user) {
-    res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' } });
+  const reqUser = (req as any).user;
+  if (!reqUser) {
+    res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'No active session' } });
     return;
   }
-  const { passwordHash, ...sanitized } = user;
-  res.json({ success: true, data: sanitized });
+
+  let user = reqUser.id ? await userRepository.findById(reqUser.id) : null;
+  if (!user && reqUser.email) {
+    user = await userRepository.findByEmail(reqUser.email);
+  }
+
+  if (user) {
+    const { passwordHash, ...sanitized } = user;
+    res.json({ success: true, data: sanitized });
+    return;
+  }
+
+  // If valid OAuth/JWT token for a user not yet persisted in local disk DB
+  const fallbackUser = {
+    id: reqUser.id || 'usr_oauth',
+    email: reqUser.email || 'user@saywise.ai',
+    displayName: reqUser.displayName || reqUser.email?.split('@')[0] || 'Member',
+    authProvider: 'google' as const,
+    createdAt: new Date().toISOString(),
+    stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 1 },
+  };
+
+  res.json({ success: true, data: fallbackUser });
 };

@@ -3,6 +3,7 @@ import { ArrowRight, Volume2, CheckCircle2, Activity, ShieldCheck, Zap, BookOpen
 import { RobotMascot } from '../common/RobotMascot.js';
 import { Navbar } from '../common/Navbar.js';
 import { NeptuneOrbVisualizer } from '../studio/NeptuneOrbVisualizer.js';
+import { useAuth } from '../../context/AuthContext.js';
 
 interface LandingPageProps {
   onStartFree: () => void;
@@ -18,6 +19,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenAuth,
   onTryDemo,
 }) => {
+  const { user } = useAuth();
+  const isLoggedIn = !!user && user.authProvider !== 'guest';
+
   const [playingWord, setPlayingWord] = useState<string | null>(null);
 
   const speakText = (text: string) => {
@@ -188,19 +192,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <button
                   onClick={onStartFree}
-                  className="px-7 py-3.5 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-bold text-sm sm:text-base transition-all shadow-xl shadow-sky-950/20 active:scale-95 flex items-center gap-2"
+                  className="px-7 py-3.5 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-bold text-sm sm:text-base transition-all shadow-xl shadow-sky-950/20 active:scale-95 flex items-center gap-2 cursor-pointer"
                 >
-                  <span>Start learning for free</span>
+                  <span>{isLoggedIn ? 'Go to Dashboard' : 'Start learning for free'}</span>
                   <ArrowRight className="w-4 h-4 text-sky-700" />
                 </button>
 
-                <button
-                  onClick={onTryDemo || onStartFree}
-                  className="px-6 py-3.5 rounded-2xl bg-sky-400/35 hover:bg-sky-400/50 backdrop-blur-md border border-white/80 text-white font-black text-sm sm:text-base transition-all shadow-xl shadow-sky-950/15 active:scale-95 flex items-center gap-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
-                >
-                  <span>⚡</span>
-                  <span className="text-white font-black tracking-wide">Try 1 Free Demo</span>
-                </button>
+                {!isLoggedIn && (
+                  <button
+                    onClick={onTryDemo || onStartFree}
+                    className="px-6 py-3.5 rounded-2xl bg-sky-400/35 hover:bg-sky-400/50 backdrop-blur-md border border-white/80 text-white font-black text-sm sm:text-base transition-all shadow-xl shadow-sky-950/15 active:scale-95 flex items-center gap-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] cursor-pointer"
+                  >
+                    <span>⚡</span>
+                    <span className="text-white font-black tracking-wide">Try 1 Free Demo</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -540,19 +546,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <button
               onClick={onStartFree}
-              className="px-8 py-4 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-black text-sm transition-all shadow-xl active:scale-95 flex items-center gap-2"
+              className="px-8 py-4 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-black text-sm transition-all shadow-xl active:scale-95 flex items-center gap-2 cursor-pointer"
             >
-              <span>Start Learning for Free</span>
+              <span>{isLoggedIn ? 'Go to Dashboard' : 'Start Learning for Free'}</span>
               <ArrowRight className="w-4 h-4 text-sky-700" />
             </button>
 
-            <button
-              onClick={onTryDemo || onStartFree}
-              className="px-7 py-4 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-xl border border-white/40 text-white font-black text-sm transition-all shadow-lg active:scale-95 flex items-center gap-2"
-            >
-              <Zap className="w-4 h-4 text-amber-300" />
-              <span>Try 1 Free Demo Test</span>
-            </button>
+            {!isLoggedIn && (
+              <button
+                onClick={onTryDemo || onStartFree}
+                className="px-7 py-4 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-xl border border-white/40 text-white font-black text-sm transition-all shadow-lg active:scale-95 flex items-center gap-2 cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>Try 1 Free Demo Test</span>
+              </button>
+            )}
           </div>
         </div>
       </section>

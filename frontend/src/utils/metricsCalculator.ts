@@ -1,54 +1,52 @@
 import { EvaluationResult } from '../types/index.js';
 
 /**
- * Returns YYYY-MM-DD in local time for clean calendar date comparisons
+ * Converts any date representation to a deterministic Local Calendar Day Integer (Epoch Days).
+ * This eliminates all UTC timezone drift, DST changes, and ISO string parsing issues.
  */
-export function getLocalDateString(dateInput?: string | number | Date): string {
+export function getLocalDayEpoch(dateInput?: string | number | Date): number {
   const d = dateInput ? new Date(dateInput) : new Date();
-  if (isNaN(d.getTime())) return new Date().toISOString().split('T')[0];
-  const year = d.getFullYear();
-  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-  const day = d.getDate().toString().padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  if (isNaN(d.getTime())) return 0;
+  // Local midnight timestamp in milliseconds
+  const localMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.floor(localMidnight / 86400000);
 }
 
 /**
- * Calculates continuous consecutive calendar-day streak
+ * Calculates continuous consecutive calendar-day streak using integer arithmetic.
  */
 export function calculateCalendarStreak(evaluations: EvaluationResult[]): number {
   if (!evaluations || evaluations.length === 0) return 0;
 
-  // Extract unique sorted practice dates (descending)
-  const uniqueDatesSet = new Set<string>();
+  // Extract unique sorted practice days (descending integer epoch)
+  const uniqueDaysSet = new Set<number>();
   evaluations.forEach((e) => {
-    const dateStr = getLocalDateString(e.createdAt || (e as any).timestamp);
-    if (dateStr) uniqueDatesSet.add(dateStr);
+    const rawDate = e.createdAt || (e as any).timestamp;
+    if (rawDate) {
+      const epoch = getLocalDayEpoch(rawDate);
+      if (epoch > 0) uniqueDaysSet.add(epoch);
+    }
   });
 
-  const uniqueDates = Array.from(uniqueDatesSet).sort().reverse();
-  if (uniqueDates.length === 0) return 0;
+  const sortedDays = Array.from(uniqueDaysSet).sort((a, b) => b - a);
+  if (sortedDays.length === 0) return 0;
 
-  const todayStr = getLocalDateString(new Date());
-  
-  // Calculate yesterday string
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = getLocalDateString(yesterday);
+  const todayEpoch = getLocalDayEpoch(new Date());
+  const yesterdayEpoch = todayEpoch - 1;
 
-  // If the user hasn't practiced today AND hasn't practiced yesterday -> streak is 0
-  const latestDate = uniqueDates[0];
-  if (latestDate !== todayStr && latestDate !== yesterdayStr) {
+  const latestDay = sortedDays[0];
+  // Streak is only active if the latest practice occurred today OR yesterday
+  if (latestDay !== todayEpoch && latestDay !== yesterdayEpoch) {
     return 0;
   }
 
   let streak = 0;
-  let expectedDate = new Date(latestDate === todayStr ? todayStr : yesterdayStr);
+  let expectedDay = latestDay;
 
-  for (const dateStr of uniqueDates) {
-    const expectedStr = getLocalDateString(expectedDate);
-    if (dateStr === expectedStr) {
+  for (const day of sortedDays) {
+    if (day === expectedDay) {
       streak++;
-      expectedDate.setDate(expectedDate.getDate() - 1);
+      expectedDay--;
     } else {
       break;
     }
@@ -58,37 +56,40 @@ export function calculateCalendarStreak(evaluations: EvaluationResult[]): number
 }
 
 /**
- * Counts evaluations completed on the current calendar day
+ * Counts evaluations completed on the current local calendar day.
  */
 export function calculateTodayEvaluations(evaluations: EvaluationResult[]): number {
   if (!evaluations || evaluations.length === 0) return 0;
-  const todayStr = getLocalDateString(new Date());
-  return evaluations.filter((e) => getLocalDateString(e.createdAt || (e as any).timestamp) === todayStr).length;
+  const todayEpoch = getLocalDayEpoch(new Date());
+  return evaluations.filter((e) => {
+    const rawDate = e.createdAt || (e as any).timestamp;
+    return rawDate ? getLocalDayEpoch(rawDate) === todayEpoch : false;
+  }).length;
 }
 
 /**
- * Calculates rolling average score (most recent 10 tests if >= 10, otherwise lifetime)
+ * Calculates rolling average score (most recent 10 tests if >= 10, otherwise lifetime).
  */
 export function calculateRollingAverageScore(evaluations: EvaluationResult[]): number | null {
   if (!evaluations || evaluations.length === 0) return null;
-  
+
   const validScores = evaluations
     .map((e) => e.scores?.overall)
-    .filter((s): s is number => typeof s === 'number' && !isNaN(s));
+    .filter((s): s is number => typeof s === 'number' && !isNaN(s) && s > 0);
 
   if (validScores.length === 0) return null;
 
-  // Take most recent 10 evaluations
-  const recentScores = validScores.slice(-10);
+  // Take the most recent 10 tests
+  const recentScores = validScores.slice(0, 10);
   const sum = recentScores.reduce((acc, score) => acc + score, 0);
   return Math.round(sum / recentScores.length);
 }
 
 /**
- * Maps deterministic score to Estimated CEFR Level
+ * Maps deterministic score to Estimated CEFR Level.
  */
 export function calculateEstimatedCEFR(averageScore: number | null): string | null {
-  if (averageScore === null || isNaN(averageScore)) return null;
+  if (averageScore === null || isNaN(averageScore) || averageScore <= 0) return null;
   if (averageScore >= 85) return 'C2';
   if (averageScore >= 75) return 'C1';
   if (averageScore >= 60) return 'B2';

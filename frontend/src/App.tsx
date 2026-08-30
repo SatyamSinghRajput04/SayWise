@@ -19,7 +19,14 @@ export const App: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [currentEvaluation, setCurrentEvaluation] = useState<EvaluationResult | null>(null);
-  const [evaluationsHistory, setEvaluationsHistory] = useState<EvaluationResult[]>([]);
+  const [evaluationsHistory, setEvaluationsHistory] = useState<EvaluationResult[]>(() => {
+    try {
+      const saved = localStorage.getItem('saywise_eval_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signup');
@@ -30,8 +37,15 @@ export const App: React.FC = () => {
   const loadHistory = React.useCallback(async () => {
     try {
       const data = await api.getEvaluationHistory(token || undefined);
-      if (Array.isArray(data)) {
-        setEvaluationsHistory(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setEvaluationsHistory((prev) => {
+          const combined = [...data, ...prev];
+          const unique = Array.from(new Map(combined.map((item) => [item.id, item])).values());
+          try {
+            localStorage.setItem('saywise_eval_history', JSON.stringify(unique));
+          } catch {}
+          return unique;
+        });
       }
     } catch (err) {
       console.warn('Failed to load history:', err);
@@ -96,8 +110,17 @@ export const App: React.FC = () => {
 
     try {
       const result = await api.submitAudioEvaluation(formData, token || undefined);
+      if (!result.createdAt) {
+        result.createdAt = new Date().toISOString();
+      }
       setCurrentEvaluation(result);
-      setEvaluationsHistory((prev) => [result, ...prev]);
+      setEvaluationsHistory((prev) => {
+        const updated = [result, ...prev.filter((item) => item.id !== result.id)];
+        try {
+          localStorage.setItem('saywise_eval_history', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
       if (isDemoSession) {
         recordDemoTestCompleted();
       }

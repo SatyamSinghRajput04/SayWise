@@ -7,6 +7,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -75,6 +76,10 @@ export const firebaseAuthService = {
         createdAt: new Date().toISOString(),
       },
     };
+  },
+
+  async sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email.trim());
   },
 
   async logout() {

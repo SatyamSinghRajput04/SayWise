@@ -13,6 +13,7 @@ interface AuthContextType {
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   loginAsGuest: (name?: string) => Promise<void>;
   loginWithGoogle: (profile?: { email: string; displayName?: string; photoURL?: string }) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   recordDemoTestCompleted: () => void;
@@ -130,6 +131,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendPasswordReset = async (email: string) => {
+    setIsLoading(true);
+    try {
+      await firebaseAuthService.sendPasswordReset(email);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -189,6 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         loginAsGuest,
         loginWithGoogle,
+        sendPasswordReset,
         logout,
         refreshUser,
         recordDemoTestCompleted,

@@ -79,7 +79,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     displayName: reqUser.displayName || reqUser.email?.split('@')[0] || 'Member',
     authProvider: 'google' as const,
     createdAt: new Date().toISOString(),
-    stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 1 },
+    stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 0 },
   };
 
   res.json({ success: true, data: fallbackUser });

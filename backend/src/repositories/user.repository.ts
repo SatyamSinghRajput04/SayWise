@@ -36,7 +36,7 @@ export class UserRepository {
         passwordHash: '$2a$10$wN3dD1.O5k1B81g6k6k6ee7n1/q7k6k6k6k6k6k6k6k6k6k6k6k6k',
         authProvider: 'guest',
         createdAt: new Date().toISOString(),
-        stats: { totalEvaluations: 4, averageOverallScore: 82, currentStreakDays: 3 },
+        stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 0 },
       });
     }
   }

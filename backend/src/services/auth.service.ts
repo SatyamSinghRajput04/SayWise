@@ -31,7 +31,7 @@ export class AuthService {
         displayName: cleanName,
         authProvider: 'guest',
         createdAt: new Date().toISOString(),
-        stats: { totalEvaluations: 4, averageOverallScore: 82, currentStreakDays: 3 },
+        stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 0 },
       };
       await userRepository.save(guest);
     } else {
@@ -57,7 +57,7 @@ export class AuthService {
         photoURL: payload.photoURL,
         authProvider: 'google',
         createdAt: new Date().toISOString(),
-        stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 1 },
+        stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 0 },
       };
       await userRepository.save(user);
     }
@@ -94,7 +94,7 @@ export class AuthService {
       passwordHash,
       authProvider: 'password',
       createdAt: new Date().toISOString(),
-      stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 1 },
+      stats: { totalEvaluations: 0, averageOverallScore: 0, currentStreakDays: 0 },
     };
 
     await userRepository.save(newUser);
@@ -110,16 +110,13 @@ export class AuthService {
     }
 
     const user = await userRepository.findByEmail(cleanEmail);
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw new Error('Invalid email or password');
     }
 
-    // If passwordHash exists, verify with bcrypt (with fallback for demo account)
-    if (user.passwordHash) {
-      const isMatch = await bcrypt.compare(password, user.passwordHash);
-      if (!isMatch && password !== 'password123') {
-        throw new Error('Invalid email or password');
-      }
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      throw new Error('Invalid email or password');
     }
 
     const sanitized = this.sanitizeUser(user);

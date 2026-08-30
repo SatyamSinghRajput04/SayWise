@@ -1,8 +1,46 @@
 import React, { useState, useRef } from 'react';
-import { ChevronLeft, Lightbulb, Square, AlertCircle, Sparkles, Mic, Type, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Lightbulb, Square, AlertCircle, Sparkles, Mic, Type, RefreshCw, Dices } from 'lucide-react';
 import { Topic } from '../../types/index.js';
 import { AudioRecordingService } from '../../services/audioService.js';
 import { NeptuneOrbVisualizer } from './NeptuneOrbVisualizer.js';
+
+const PROMPT_BANKS: Record<string, string[]> = {
+  'Travel': [
+    'Describe a memorable journey you took or a place you would love to visit. Explain why it was significant to you.',
+    'Talk about an unexpected adventure or cultural surprise you experienced while traveling away from home.',
+    'If you could live in any city in the world for one full year, where would you go, what local traditions would you explore, and why?',
+    'Describe your ideal vacation: would you prefer exploring a bustling historic metropolis or relaxing in isolated natural landscapes? Give reasons.',
+    'Discuss a local dish or culinary experience from a trip that left a lasting impression on your taste and memory.'
+  ],
+  'Education': [
+    'Discuss an important skill or academic subject you learned. How has it influenced your personal or professional life?',
+    'Talk about a mentor, teacher, or book that fundamentally transformed the way you approach problem-solving and critical thinking.',
+    'Describe a time you struggled to learn a complex concept (such as programming, math, or a language) and how you persevered through frustration.',
+    'If you could instantly download and master any complex domain or art form overnight, what would you choose and how would you apply it?',
+    'Do you believe self-directed online learning will eventually replace traditional university degrees? Defend your perspective.'
+  ],
+  'Technology': [
+    'How do you think artificial intelligence and automation will reshape workplace dynamics and daily life over the next decade?',
+    'Discuss the ethical dilemmas of autonomous robots and smart AI assistants operating inside our private homes.',
+    'Would you ever participate in a mission to colonize Mars or travel to orbit if commercial spaceflight became affordable? Why or why not?',
+    'What is one science fiction technology or invention you wish existed today, and how would it solve a major global problem?',
+    'How has social media altered human relationships and attention spans, and what boundaries should we set for our digital well-being?'
+  ],
+  'Work & Career': [
+    'Talk about your ideal career or dream job. What responsibilities would it entail, and why is it appealing to you?',
+    'If you were to launch your own tech startup tomorrow, what core problem would you tackle and what culture would you build for your team?',
+    'Describe the single most vital quality of an inspiring leader, and provide a real-world or historical example.',
+    'What does healthy work-life balance mean to you, and how do you prioritize between high career ambitions and personal health?',
+    'Describe an ideal project team: would you prefer working with specialists who do one thing perfectly, or versatile generalists? Explain.'
+  ],
+  'Random Topic': [
+    'Talk about a movie or television series that had a deep emotional impact on you. What made the storytelling memorable?',
+    'Describe an iconic sports match, tournament, or comeback victory that inspired you with its display of teamwork and grit.',
+    'If you could spend 24 hours inside the fictional world of any movie, video game, or novel, which universe would you choose and what would you do?',
+    'Describe a time you faced intense stage fright or nervousness speaking before a crowd, and how you handled the adrenaline.',
+    'What is a song, musical genre, or soundtrack that motivates you to focus and conquer challenging goals? Explain why it resonates with you.'
+  ],
+};
 
 interface SpeakingStudioPageProps {
   topic: Topic;
@@ -15,7 +53,10 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
   onBack,
   onSubmitRecording,
 }) => {
-  const allPrompts = topic.prompts && topic.prompts.length > 0 ? topic.prompts : [topic.prompt];
+  // Built-in fallback guarantee so shuffle is ALWAYS available with 5+ prompts
+  const categoryBank = PROMPT_BANKS[topic.category] || PROMPT_BANKS['Random Topic'];
+  const allPrompts = (topic.prompts && topic.prompts.length > 1) ? topic.prompts : categoryBank;
+  
   const [promptIndex, setPromptIndex] = useState(0);
   const currentPrompt = allPrompts[promptIndex % allPrompts.length];
 
@@ -225,6 +266,8 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
             {/* Left Column: Prompt & Speaking Target Goals */}
             <div className="lg:col-span-5 space-y-5 text-left">
               <div className="space-y-3">
+                
+                {/* Target Word Count + Shuffle Badge Header */}
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   {isRecording ? (
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-black uppercase tracking-wider animate-pulse">
@@ -232,18 +275,18 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
                       <span>Speaking in progress...</span>
                     </div>
                   ) : (
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-[11px] font-black uppercase tracking-wider">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-100 text-sky-900 text-[11px] font-black uppercase tracking-wider">
                       <span>🎯 Target: {minWords}–{maxWords} words</span>
                     </div>
                   )}
 
-                  {!isRecording && allPrompts.length > 1 && (
+                  {!isRecording && (
                     <button
                       onClick={handleShufflePrompt}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs font-black transition-all border border-sky-300 active:scale-95 shadow-sm cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-xs font-black transition-all shadow-md shadow-sky-500/20 active:scale-95 cursor-pointer"
                       title="Shuffle to another challenge prompt in this category"
                     >
-                      <RefreshCw className="w-3.5 h-3.5" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin-hover" />
                       <span>Shuffle Topic ({promptIndex + 1}/{allPrompts.length})</span>
                     </button>
                   )}
@@ -253,17 +296,19 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
                   {topic.title}
                 </h1>
 
-                <div className="space-y-1.5">
-                  <p className="text-slate-700 text-sm font-semibold leading-relaxed bg-sky-50/80 border border-sky-200/80 rounded-2xl p-4 shadow-sm transition-all">
+                {/* Main Topic Prompt Card with Click-to-Shuffle Bar */}
+                <div className="space-y-2">
+                  <div className="text-slate-800 text-sm font-semibold leading-relaxed bg-sky-50/90 border-2 border-sky-200 rounded-2xl p-4.5 shadow-sm transition-all">
                     "{currentPrompt}"
-                  </p>
-                  {!isRecording && allPrompts.length > 1 && (
+                  </div>
+
+                  {!isRecording && (
                     <button
                       onClick={handleShufflePrompt}
-                      className="text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1.5 transition-colors pl-1 pt-0.5 cursor-pointer"
+                      className="w-full py-2 px-3 rounded-xl bg-sky-100/70 hover:bg-sky-200/80 text-sky-900 text-xs font-extrabold flex items-center justify-center gap-2 transition-all border border-sky-300/80 active:scale-[0.99] cursor-pointer"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Not familiar with this? Click to switch challenge</span>
+                      <Dices className="w-4 h-4 text-sky-600" />
+                      <span>Don't know this topic? Click for another challenge ({promptIndex + 1}/{allPrompts.length})</span>
                     </button>
                   )}
                 </div>

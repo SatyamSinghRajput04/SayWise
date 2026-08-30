@@ -20,6 +20,7 @@ export interface Topic {
   category: TopicCategory;
   title: string;
   prompt: string;
+  prompts?: string[];
   description: string;
   icon: string;
   targetWordCount: { min: number; max: number };

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ChevronLeft, Lightbulb, Square, AlertCircle, Sparkles, Mic, Type } from 'lucide-react';
+import { ChevronLeft, Lightbulb, Square, AlertCircle, Sparkles, Mic, Type, RefreshCw } from 'lucide-react';
 import { Topic } from '../../types/index.js';
 import { AudioRecordingService } from '../../services/audioService.js';
 import { NeptuneOrbVisualizer } from './NeptuneOrbVisualizer.js';
@@ -7,7 +7,7 @@ import { NeptuneOrbVisualizer } from './NeptuneOrbVisualizer.js';
 interface SpeakingStudioPageProps {
   topic: Topic;
   onBack: () => void;
-  onSubmitRecording: (audioBlob: Blob | null, transcriptText?: string, durationSec?: number) => void;
+  onSubmitRecording: (audioBlob: Blob | null, transcriptText?: string, durationSec?: number, topicPrompt?: string) => void;
 }
 
 export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
@@ -15,6 +15,10 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
   onBack,
   onSubmitRecording,
 }) => {
+  const allPrompts = topic.prompts && topic.prompts.length > 0 ? topic.prompts : [topic.prompt];
+  const [promptIndex, setPromptIndex] = useState(0);
+  const currentPrompt = allPrompts[promptIndex % allPrompts.length];
+
   const [isRecording, setIsRecording] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -84,7 +88,7 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
       }
 
       setTimeout(() => {
-        onSubmitRecording(result.audioBlob, finalTranscript, finalDuration);
+        onSubmitRecording(result.audioBlob, finalTranscript, finalDuration, currentPrompt);
       }, 400);
     } catch (err: any) {
       setIsTransitioning(false);
@@ -106,8 +110,13 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
     const estimatedDuration = Math.max(Math.round(words.length / 2.2), 15);
     setIsTransitioning(true);
     setTimeout(() => {
-      onSubmitRecording(null, manualTranscript.trim(), estimatedDuration);
+      onSubmitRecording(null, manualTranscript.trim(), estimatedDuration, currentPrompt);
     }, 400);
+  };
+
+  const handleShufflePrompt = () => {
+    if (isRecording) return;
+    setPromptIndex((prev) => (prev + 1) % allPrompts.length);
   };
 
   const formatTime = (secs: number) => {
@@ -203,7 +212,7 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
                 <span>Examiner Pro Tips for "{topic.title}":</span>
               </p>
               <ul className="space-y-1 list-disc list-inside font-medium pl-1 text-slate-700">
-                <li>Structure your response: Introduction $\to$ Key Reasons/Stories $\to$ Conclusion.</li>
+                <li>Structure your response: Introduction → Key Reasons/Stories → Conclusion.</li>
                 <li>Aim for 100–200 words at a steady, natural speaking pace of 120–140 words per minute.</li>
                 <li>Incorporate high-level academic adjectives and varied conjunctions.</li>
               </ul>
@@ -215,25 +224,49 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
             
             {/* Left Column: Prompt & Speaking Target Goals */}
             <div className="lg:col-span-5 space-y-5 text-left">
-              <div className="space-y-2.5">
-                {isRecording ? (
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-black uppercase tracking-wider animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                    <span>Speaking in progress...</span>
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-[11px] font-black uppercase tracking-wider">
-                    <span>🎯 Target: {minWords}–{maxWords} words</span>
-                  </div>
-                )}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  {isRecording ? (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-black uppercase tracking-wider animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span>Speaking in progress...</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-[11px] font-black uppercase tracking-wider">
+                      <span>🎯 Target: {minWords}–{maxWords} words</span>
+                    </div>
+                  )}
+
+                  {!isRecording && allPrompts.length > 1 && (
+                    <button
+                      onClick={handleShufflePrompt}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs font-black transition-all border border-sky-300 active:scale-95 shadow-sm cursor-pointer"
+                      title="Shuffle to another challenge prompt in this category"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Shuffle Topic ({promptIndex + 1}/{allPrompts.length})</span>
+                    </button>
+                  )}
+                </div>
 
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug font-display">
                   {topic.title}
                 </h1>
 
-                <p className="text-slate-600 text-sm font-medium leading-relaxed bg-sky-50/60 border border-sky-100/80 rounded-2xl p-4">
-                  "{topic.prompt}"
-                </p>
+                <div className="space-y-1.5">
+                  <p className="text-slate-700 text-sm font-semibold leading-relaxed bg-sky-50/80 border border-sky-200/80 rounded-2xl p-4 shadow-sm transition-all">
+                    "{currentPrompt}"
+                  </p>
+                  {!isRecording && allPrompts.length > 1 && (
+                    <button
+                      onClick={handleShufflePrompt}
+                      className="text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1.5 transition-colors pl-1 pt-0.5 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Not familiar with this? Click to switch challenge</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Progress & Target Stats Capsule */}
@@ -278,106 +311,107 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
             {/* Right Column: 3D Rotating Neptune Planet */}
             <div className="lg:col-span-7 flex flex-col items-center justify-center space-y-5 text-center">
               
+              {/* 3D Neptune Planet Visualizer */}
+              <div className="w-full flex justify-center py-2">
+                <NeptuneOrbVisualizer isRecording={isRecording} audioLevel={audioLevel} />
+              </div>
+
+              {/* Timer & Speech Cadence Status */}
+              <div className="flex items-center gap-3">
+                <div className="px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 font-mono font-bold text-sm tracking-wider shadow-inner">
+                  ⏱️ {formatTime(secondsElapsed)}
+                </div>
+                {isRecording && (
+                  <div className="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-extrabold animate-pulse">
+                    Voice Active (Mic On)
+                  </div>
+                )}
+              </div>
+
+              {/* Live Speech Recognition Transcription Box */}
+              {isRecording && (
+                <div className="w-full max-w-md bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-left text-xs text-slate-700 space-y-1 animate-in fade-in">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Live Spoken Transcript:</p>
+                  <p className="font-medium italic text-slate-800 min-h-[32px] line-clamp-3">
+                    {liveTranscript || 'Start speaking clearly into your mic...'}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons: Record / Stop / Text Fallback */}
               {!useTextMode ? (
-                <>
-                  {/* 3D Neptune Planet Visualizer (Pure planet, zero clutter) */}
-                  <div className="relative py-2 flex items-center justify-center">
-                    <NeptuneOrbVisualizer
-                      isRecording={isRecording}
-                      audioLevel={audioLevel}
-                      isTransitioning={isTransitioning}
-                      onClick={isRecording ? handleStopRecording : handleStartRecording}
-                    />
-                  </div>
-
-                  {/* Timer & Status Captions */}
-                  <div className="space-y-1">
-                    <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight flex items-center justify-center gap-2">
-                      {isRecording && <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping inline-block" />}
-                      <span>{formatTime(secondsElapsed)}</span>
-                    </div>
-                    <p className="text-xs font-bold text-sky-700 uppercase tracking-wider">
-                      {isRecording ? "I'm listening..." : "Ready when you are."}
-                    </p>
-                  </div>
-
-                  {/* Live Recognized Speech Bubble */}
-                  {isRecording && liveTranscript && (
-                    <div className="w-full max-w-md bg-sky-50/90 border border-sky-200/90 rounded-2xl p-3.5 text-xs text-slate-700 italic font-medium leading-relaxed shadow-sm animate-in fade-in">
-                      "{liveTranscript}"
-                    </div>
+                <div className="w-full max-w-sm space-y-3 pt-2">
+                  {!isRecording ? (
+                    <button
+                      onClick={handleStartRecording}
+                      disabled={isTransitioning}
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black text-base shadow-xl shadow-sky-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Mic className="w-5 h-5" />
+                      <span>Start Speaking</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStopRecording}
+                      disabled={isTransitioning}
+                      className="w-full py-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-base shadow-xl shadow-rose-600/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Square className="w-4 h-4 fill-white" />
+                      <span>Finish & Evaluate ({liveWordCount} words)</span>
+                    </button>
                   )}
 
-                  {/* Primary Action Button */}
-                  <div className="w-full max-w-md space-y-3 pt-1">
-                    {isRecording ? (
-                      <button
-                        onClick={handleStopRecording}
-                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-red-600 to-rose-600 hover:from-rose-600 hover:to-red-700 text-white font-black text-sm shadow-xl shadow-rose-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                      >
-                        <Square className="w-4 h-4 fill-white" />
-                        <span>Finish & Analyze →</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleStartRecording}
-                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-black text-sm shadow-xl shadow-sky-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                      >
-                        <Mic className="w-4 h-4" />
-                        <span>Start Speaking Now →</span>
-                      </button>
-                    )}
-
-                    {/* Manual Text Switcher */}
+                  {!isRecording && (
                     <button
                       onClick={() => setUseTextMode(true)}
-                      className="text-xs font-bold text-slate-500 hover:text-sky-700 transition-colors inline-flex items-center gap-1"
+                      className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1.5 mx-auto transition-colors pt-1 cursor-pointer"
                     >
                       <Type className="w-3.5 h-3.5" />
-                      <span>Or write/type transcript manually</span>
+                      <span>Prefer typing instead of speaking?</span>
                     </button>
-                  </div>
-                </>
+                  )}
+                </div>
               ) : (
-                /* Manual Text Mode */
-                <form onSubmit={handleManualSubmit} className="w-full max-w-md space-y-4">
-                  <div className="text-left space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                      Type Your Spoken Response:
+                /* Manual Text Submission Mode */
+                <form onSubmit={handleManualSubmit} className="w-full max-w-md space-y-3 pt-2 text-left">
+                  <div className="space-y-1">
+                    <label className="text-xs font-extrabold text-slate-700 flex items-center justify-between">
+                      <span>Type your 100–200 word response:</span>
+                      <span className="font-mono text-slate-500">
+                        {manualTranscript.trim().split(/\s+/).filter(Boolean).length} words
+                      </span>
                     </label>
                     <textarea
-                      required
-                      rows={6}
                       value={manualTranscript}
                       onChange={(e) => setManualTranscript(e.target.value)}
-                      placeholder="Type your response here (100–200 words)..."
-                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white text-slate-800 transition-all leading-relaxed"
+                      placeholder="Type your response here..."
+                      rows={5}
+                      className="w-full rounded-2xl border border-slate-300 p-3.5 text-xs text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none resize-none font-medium leading-relaxed"
                     />
-                    <div className="flex justify-between text-[11px] font-bold text-slate-400">
-                      <span>{manualTranscript.trim().split(/\s+/).filter(Boolean).length} words</span>
-                      <span>Target: {minWords}–{maxWords} words</span>
-                    </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>Submit for AI Evaluation →</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setUseTextMode(false)}
-                    className="text-xs font-bold text-slate-500 hover:text-sky-700 transition-colors inline-flex items-center gap-1"
-                  >
-                    <Mic className="w-3.5 h-3.5" />
-                    <span>Switch back to Voice Recording</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={isTransitioning || !manualTranscript.trim()}
+                      className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black text-xs shadow-lg shadow-sky-500/20 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      Submit for AI Evaluation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUseTextMode(false)}
+                      className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all"
+                    >
+                      Switch to Mic
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
+
           </div>
+
         </div>
       </div>
     </div>

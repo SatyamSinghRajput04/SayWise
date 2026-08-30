@@ -66,13 +66,13 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSubmitRecording = async (audioBlob: Blob | null, transcriptText?: string, durationSec?: number) => {
+  const handleSubmitRecording = async (audioBlob: Blob | null, transcriptText?: string, durationSec?: number, topicPrompt?: string) => {
     if (!selectedTopic) return;
     setCurrentScreen('STUDIO_ANALYZING');
 
     const formData = new FormData();
     formData.append('topicId', selectedTopic.id);
-    formData.append('topicPrompt', selectedTopic.prompt);
+    formData.append('topicPrompt', topicPrompt || selectedTopic.prompt);
     if (durationSec) formData.append('durationSeconds', durationSec.toString());
     if (transcriptText) formData.append('transcript', transcriptText);
     if (audioBlob) formData.append('audio', audioBlob, 'speaking_sample.webm');

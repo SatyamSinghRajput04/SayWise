@@ -372,16 +372,6 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
                 )}
               </div>
 
-              {/* Live Speech Recognition Transcription Box */}
-              {isRecording && (
-                <div className="w-full max-w-md bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-left text-xs text-slate-700 space-y-1 animate-in fade-in">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Live Spoken Transcript:</p>
-                  <p className="font-medium italic text-slate-800 min-h-[32px] line-clamp-3">
-                    {liveTranscript || 'Start speaking clearly into your mic...'}
-                  </p>
-                </div>
-              )}
-
               {/* Action Buttons: Record / Stop / Text Fallback */}
               {!useTextMode ? (
                 <div className="w-full max-w-sm space-y-3 pt-2">

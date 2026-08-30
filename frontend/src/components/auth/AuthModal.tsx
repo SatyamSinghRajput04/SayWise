@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, User as UserIcon, ArrowRight, Loader2, AlertCircle, Sparkles, Infinity, ChevronLeft } from 'lucide-react';
+import { X, Mail, Lock, User as UserIcon, ArrowRight, Loader2, AlertCircle, Sparkles, Infinity, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
 import { SayWiseLogo } from '../common/SayWiseLogo.js';
 
@@ -25,12 +25,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [displayName, setDisplayName] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [resetSubmitted, setResetSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
       setErrorMessage(null);
       setResetSubmitted(false);
+      setShowPassword(false);
     }
   }, [isOpen, initialMode]);
 
@@ -271,14 +273,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
                       minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all text-slate-800"
+                      className="w-full pl-10 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all text-slate-800 font-medium"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer p-1 rounded-lg hover:bg-slate-100"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4 text-sky-600" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
               )}

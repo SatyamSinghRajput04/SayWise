@@ -19,11 +19,28 @@ export const App: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [currentEvaluation, setCurrentEvaluation] = useState<EvaluationResult | null>(null);
+  const [evaluationsHistory, setEvaluationsHistory] = useState<EvaluationResult[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signup');
   const [authModalTitle, setAuthModalTitle] = useState<string | undefined>();
   const [authModalSubtitle, setAuthModalSubtitle] = useState<string | undefined>();
+
+  // Load history
+  const loadHistory = React.useCallback(async () => {
+    try {
+      const data = await api.getEvaluationHistory(token || undefined);
+      if (Array.isArray(data)) {
+        setEvaluationsHistory(data);
+      }
+    } catch (err) {
+      console.warn('Failed to load history:', err);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory, token]);
 
   // Fetch initial topics
   useEffect(() => {
@@ -80,6 +97,7 @@ export const App: React.FC = () => {
     try {
       const result = await api.submitAudioEvaluation(formData, token || undefined);
       setCurrentEvaluation(result);
+      setEvaluationsHistory((prev) => [result, ...prev]);
       if (isDemoSession) {
         recordDemoTestCompleted();
       }
@@ -132,6 +150,7 @@ export const App: React.FC = () => {
           <DashboardPage
             user={user}
             topics={topics}
+            evaluations={evaluationsHistory}
             onSelectTopic={handleSelectTopic}
             onOpenHistory={() => setIsHistoryOpen(true)}
           />

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ChevronLeft, Lightbulb, Square, AlertCircle, Sparkles, Mic, Type, RefreshCw, Dices } from 'lucide-react';
+import { ChevronLeft, Lightbulb, Square, AlertCircle, Sparkles, Mic, Type, RefreshCw } from 'lucide-react';
 import { Topic } from '../../types/index.js';
 import { AudioRecordingService } from '../../services/audioService.js';
 import { NeptuneOrbVisualizer } from './NeptuneOrbVisualizer.js';
@@ -296,20 +296,19 @@ export const SpeakingStudioPage: React.FC<SpeakingStudioPageProps> = ({
                   {topic.title}
                 </h1>
 
-                {/* Main Topic Prompt Card with Click-to-Shuffle Bar */}
+                {/* Main Topic Prompt Card */}
                 <div className="space-y-2">
                   <div className="text-slate-800 text-sm font-semibold leading-relaxed bg-sky-50/90 border-2 border-sky-200 rounded-2xl p-4.5 shadow-sm transition-all">
                     "{currentPrompt}"
                   </div>
 
                   {!isRecording && (
-                    <button
-                      onClick={handleShufflePrompt}
-                      className="w-full py-2 px-3 rounded-xl bg-sky-100/70 hover:bg-sky-200/80 text-sky-900 text-xs font-extrabold flex items-center justify-center gap-2 transition-all border border-sky-300/80 active:scale-[0.99] cursor-pointer"
-                    >
-                      <Dices className="w-4 h-4 text-sky-600" />
-                      <span>Don't know this topic? Click for another challenge ({promptIndex + 1}/{allPrompts.length})</span>
-                    </button>
+                    <p className="text-[12px] font-medium text-slate-500 flex items-center gap-1.5 px-1">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                      <span>
+                        Don't know this topic? Click <strong className="text-sky-700 font-bold">Shuffle Topic</strong> above to refresh challenges.
+                      </span>
+                    </p>
                   )}
                 </div>
               </div>
